@@ -1,1 +1,3 @@
+#!/bin/bash
+
 Rscript 02_job_jobstreet_structuring.R
