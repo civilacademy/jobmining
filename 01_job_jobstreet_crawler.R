@@ -1,13 +1,9 @@
 library(rvest)
 library(stringr)
+library(readr)
 suppressMessages(library(dplyr))
 
-baseurl <- "https://www.jobstreet.co.id/id/"
-pagination <- 1
-url <- paste0(
-  baseurl, "job-search/building-construction-jobs/", pagination
-)
-
+# function -----
 collect_joblist <- function(page){
   title <- page %>% 
     html_elements(".sx2jih0 .zcydq8bm") %>% 
@@ -30,7 +26,15 @@ collect_joblist <- function(page){
   return(jobs)
 }
 
-sleep_time <- 4L
+# scraping -----
+baseurl <- "https://www.jobstreet.co.id/id/"
+pagination <- 1
+url <- paste0(baseurl, "job-search/building-construction-jobs/", pagination)
+
+# parameter
+sleep_time <- 3L
+message(paste0("Pause duration: ", sleep_time, " secs"))
+
 start_time <- Sys.time()
 
 page <- read_html(url)
@@ -46,40 +50,55 @@ count <- ceiling(count/30)
 joblist <- collect_joblist(page)
 message(sprintf("Progress %s/%s", pagination, count))
 Sys.sleep(sleep_time)
+# succeed_crawl <- 1
 
 for (pagination in 2:count) {
-  url <- paste0(
-    baseurl, "job-search/building-construction-jobs/", pagination
-  )
-  page <- read_html(url)
-  jobs <- collect_joblist(page)
-  joblist <- bind_rows(joblist, jobs)
-  message(sprintf("Progress %s/%s", pagination, count))
-  Sys.sleep(sleep_time)
-  succeed_crawl <- pagination
+  tryCatch({
+    url <- paste0(baseurl, "job-search/building-construction-jobs/", pagination)
+    page <- read_html(url)
+    jobs <- collect_joblist(page)
+    joblist <- bind_rows(joblist, jobs)
+    message(sprintf("Progress %s/%s", pagination, count))
+    Sys.sleep(sleep_time)
+  }, 
+  error = function(e){
+    message(paste0("Error data ", pagination, ": ", conditionMessage(e)))
+  })
+  succeed_crawl <- pagination # sementara
 }
 
 end_time <- Sys.time()
 duration <- end_time - start_time - succeed_crawl*(sleep_time/60)
-message(duration)
+duration <- as.numeric(duration)
+message(paste0(
+  "Scraping duration: ",
+  round(duration), " mins ", round((duration - round(duration))*60), " secs"
+))
 
-joblist_prev <- lapply(list.files("data", "joblist_.+rds", full.names = TRUE), function(f){
-  joblist_file <- readRDS(f)
-})
-
-joblist_older <- joblist_prev[[1]]
-for (i in 2:length(joblist_prev)) {
-  joblist_older <- bind_rows(joblist_older, joblist_prev[[i]])
-  joblist_older <- distinct(joblist_older)
+# subset data -----
+# load previous job collected
+joblist_collection <- "data/joblist/joblist_collection.csv"
+if(file.exists(joblist_collection)) {
+  joblist_collection <- read_csv(joblist_collection, col_types = cols(id = col_character()))
 }
 
-joblist <- joblist %>% anti_join(joblist_older, by = "id") %>% distinct()
+joblist_older <- "data/joblist"
+joblist_older <- list.files(joblist_older, "jobstreet.+csv", full.names = TRUE)
+if(length(joblist_older) > 0) {
+  joblist_older <- read_csv(joblist_older, col_types = cols(id = col_character()))
+  joblist_older <- joblist_older[-4] %>% distinct()
+  joblist_collection <- bind_rows(joblist_collection, joblist_older) %>% distinct()
+}
 
+# subset data
+joblist <- anti_join(joblist, joblist_collection, by = "id") %>% distinct()
+
+# save new data -----
 if (nrow(joblist) > 0) {
-  saveRDS(joblist, file = paste0("data/jobstreet_joblist_", as.character(Sys.Date()), ".rds"))
+  if(!dir.exists("data/joblist")) dir.create("data/joblist")
   joblist <- bind_cols(joblist, timestamp = end_time)
-  write.csv(joblist, file = paste0("data/jobstreet_joblist_", as.character(Sys.Date()), ".csv"), row.names = FALSE)
-  message(paste0(nrow(joblist), " new job post(s)."))
+  write.csv(joblist, file = paste0("data/joblist/jobstreet_joblist_", as.character(Sys.Date()), ".csv"), row.names = FALSE)
+  message(paste0(nrow(joblist), " new job post(s) stored"))
   new_job_availability <- TRUE
 } else {
   message(paste0("There is no new job post yet."))
