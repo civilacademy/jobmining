@@ -75,10 +75,13 @@ for (i in 2:length(joblist_prev)) {
 
 joblist <- joblist %>% anti_join(joblist_older, by = "id") %>% distinct()
 
-saveRDS(joblist, file = paste0("data/jobstreet_joblist_", as.character(Sys.Date()), ".rds"))
-
-joblist <- bind_cols(joblist, timestamp = end_time)
-
-write.csv(joblist, file = paste0("data/jobstreet_joblist_", as.character(Sys.Date()), ".csv"), row.names = FALSE)
-
-message(paste0(nrow(joblist), " new job post(s)."))
+if (nrow(joblist) > 0) {
+  saveRDS(joblist, file = paste0("data/jobstreet_joblist_", as.character(Sys.Date()), ".rds"))
+  joblist <- bind_cols(joblist, timestamp = end_time)
+  write.csv(joblist, file = paste0("data/jobstreet_joblist_", as.character(Sys.Date()), ".csv"), row.names = FALSE)
+  message(paste0(nrow(joblist), " new job post(s)."))
+  new_job_availability <- TRUE
+} else {
+  message(paste0("There is no new job post yet."))
+  new_job_availability <- FALSE
+}

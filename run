@@ -1,3 +1,5 @@
 #!/bin/bash
 
+docker container start mongojob
 Rscript 02_job_jobstreet_structuring.R
+docker container stop mongojob
