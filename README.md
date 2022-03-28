@@ -22,3 +22,10 @@ MONGO_USERNAME=<username>
 MONGO_PASSWORD=<password>
 MONGO_PORT=27017
 ```
+
+**Issues**
+
+- Description in clean format already without punctuation (perhaps we need those)
+- Description still not in proper form of indentation like in sources
+- Storing multi-location should not in blank (there're stored in metadata field)
+

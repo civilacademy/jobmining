@@ -1,15 +1,21 @@
-source("01_job_jobstreet_crawler.R")
 library(rvest)
 library(stringr)
 library(mongolite)
 suppressMessages(library(dplyr))
 
-# joblist <- readRDS("data/jobstreet_joblist_2022-02-06.rds") # cari yang terakhir
+# you have to import previous data from script 01 named joblist
+source("01_job_jobstreet_crawler.R")
 
 if (new_job_availability) {
   
-  sleep_time <- 4L
+  # parameters
+  sleep_time <- 3L
+  message(paste0("Pause duration: ", sleep_time, " secs"))
+  iter <- ceiling(nrow(joblist)/10)
+  # iter <- floor(nrow(joblist)/10)
+  # last_iter_item <- nrow(joblist) %% 10
   
+  # function
   collect_jobdesc <- function(joblist, n0, n1){
     
     for (num in n0:n1) {
@@ -63,36 +69,34 @@ if (new_job_availability) {
         Sys.sleep(sleep_time)
       },
       error = function(e){
-        message(paste0("Error data ", num, ": ",conditionMessage(e)))
+        message(paste0("Error data ", num, ": ", conditionMessage(e)))
       })
     }
     return(jobdesc)
   }
   
-  iter <- ceiling(nrow(joblist)/10)
-  
+  # looping
   for (i in 1:iter) {
     message(paste0("LOOP ", i, "/", iter))
-    jobdesc <- collect_jobdesc(joblist, i*10-9, i*10) # joblist object is from script 01
+    jobdesc <- collect_jobdesc(joblist, i*10-9, i*10)
     if (i > 1) {
       jobraw <- bind_rows(jobraw, jobdesc)
     } else {
       jobraw <- jobdesc
     }
-    if (i < iter) {
-      message(sprintf("%s second pause", sleep_time))
-      Sys.sleep(sleep_time)
-    }
   }
   
   jobraw <- jobraw %>% distinct()
   
-  saveRDS(jobraw, paste0("data/jobstreet_jobraw_", as.character(Sys.Date()), ".rds"))
+  # save raw data to rds
+  if(!dir.exists("data/jobraw")) dir.create("data/jobraw")
+  store_name <- paste0("data/jobraw/jobstreet_jobraw_", as.character(Sys.Date()), ".rds")
+  saveRDS(jobraw, store_name)
+  message(paste0("Raw data saved to ", store_name))
   
-  jobraw_backup <- jobraw
-  # jobraw <- jobraw_backup
-  
-  jobraw$description <- lapply(jobraw$description, function(row) {
+  # structural transformation
+  jobdata <- jobraw
+  jobdata$description <- lapply(jobdata$description, function(row) {
     # tahap 1
     description <- lapply(row, function(node){
       if ("div" %in% html_name(node)) {
@@ -148,19 +152,20 @@ if (new_job_availability) {
     })
   })
   
-  # store data to rds
-  store_name <- paste0("data/jobstreet_jobdata_", as.character(Sys.Date()), ".rds")
-  saveRDS(jobraw, store_name)
+  # save data to rds
+  if(!dir.exists("data/jobdata")) dir.create("data/jobdata")
+  store_name <- paste0("data/jobdata/jobstreet_jobdata_", as.character(Sys.Date()), ".rds")
+  saveRDS(jobdata, store_name)
   message(paste0("Data saved to ", store_name))
   
-  # store data to mongodb
+  # save data to mongodb
   conn <- mongo(
     collection = "jobcollection", 
     db = "test", 
-    url = paste0("mongodb://", Sys.getenv("MONGO_USERNAME"), ":", Sys.getenv("MONGO_PASSWORD"), "@", "localhost:", Sys.getenv("MONGO_PORT")), 
+    url = sprintf("mongodb://%s:%s@localhost:%s", Sys.getenv("MONGO_USERNAME"), Sys.getenv("MONGO_PASSWORD"), Sys.getenv("MONGO_PORT")),
     verbose = TRUE
   )
-  conn$insert(jobraw) # insert record
-  message(paste0("Data inserted to mongodb's collection"))
+  conn$insert(jobdata) # insert record
+  message(paste0("Data imported to mongodb's collection"))
   
 }
