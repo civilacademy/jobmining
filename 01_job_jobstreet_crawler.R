@@ -1,7 +1,7 @@
 # The result would be joblist
 library(rvest)
 library(stringr)
-library(readr)
+suppressMessages(library(readr))
 suppressMessages(library(dplyr))
 
 # function -----
@@ -73,7 +73,7 @@ duration <- end_time - start_time - succeed_crawl*(sleep_time/60)
 duration <- as.numeric(duration)
 message(paste0(
   "Scraping duration: ",
-  round(duration), " mins ", round((duration - round(duration))*60), " secs"
+  floor(duration), " mins ", round((duration - floor(duration))*60), " secs"
 ))
 
 # subset data -----
@@ -99,7 +99,7 @@ if (nrow(joblist) > 0) {
   if(!dir.exists("data/joblist")) dir.create("data/joblist")
   joblist <- bind_cols(joblist, timestamp = end_time)
   write.csv(joblist, file = paste0("data/joblist/jobstreet_joblist_", as.character(Sys.Date()), ".csv"), row.names = FALSE)
-  message(paste0(nrow(joblist), " new job post(s) stored"))
+  message(paste0(nrow(joblist), " new job link(s) stored"))
   new_job_availability <- TRUE
 } else {
   message(paste0("There is no new job post yet."))
