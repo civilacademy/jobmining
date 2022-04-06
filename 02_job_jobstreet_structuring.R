@@ -1,15 +1,13 @@
 library(rvest)
 library(stringr)
-library(mongolite)
 suppressMessages(library(dplyr))
 
-# you have to import previous data from script 01 named joblist
-source("01_job_jobstreet_crawler.R")
+# you have to run previous script 01 to get object named joblist
 
 if (new_job_availability) {
   
   # parameters
-  sleep_time <- 3L
+  sleep_time <- 2L
   message(paste0("Pause duration: ", sleep_time, " secs"))
   iter <- ceiling(nrow(joblist)/10)
   # iter <- floor(nrow(joblist)/10)
@@ -54,7 +52,6 @@ if (new_job_availability) {
           company, 
           location,
           metadata = list(metadata),
-          # published, 
           description = list(description),
           link = joblist$link[[num]]
         )
@@ -77,7 +74,7 @@ if (new_job_availability) {
   
   # looping
   for (i in 1:iter) {
-    message(paste0("LOOP ", i, "/", iter))
+    message(paste0("Iteration ", i, "/", iter))
     jobdesc <- collect_jobdesc(joblist, i*10-9, i*10)
     if (i > 1) {
       jobraw <- bind_rows(jobraw, jobdesc)
@@ -86,7 +83,7 @@ if (new_job_availability) {
     }
   }
   
-  jobraw <- jobraw %>% distinct()
+  jobraw <- distinct(jobraw)
   
   # save raw data to rds
   if(!dir.exists("data/jobraw")) dir.create("data/jobraw")
@@ -158,14 +155,6 @@ if (new_job_availability) {
   saveRDS(jobdata, store_name)
   message(paste0("Data saved to ", store_name))
   
-  # save data to mongodb
-  conn <- mongo(
-    collection = "jobcollection", 
-    db = "test", 
-    url = sprintf("mongodb://%s:%s@localhost:%s", Sys.getenv("MONGO_USERNAME"), Sys.getenv("MONGO_PASSWORD"), Sys.getenv("MONGO_PORT")),
-    verbose = TRUE
-  )
-  conn$insert(jobdata) # insert record
-  message(paste0("Data imported to mongodb's collection"))
-  
 }
+
+# next step: saving jobdata to db using script 03

@@ -40,6 +40,7 @@ start_time <- Sys.time()
 
 page <- read_html(url)
 
+# counting iteration
 count <- page %>% 
   html_elements(xpath = "/html/body/div[1]/div/div/div[2]/div[2]/div/div/div/div/div/div/div/div[1]/div[1]/div/span") %>% 
   html_text() %>% 
@@ -48,11 +49,12 @@ count <- page %>%
   as.integer()
 count <- ceiling(count/30)
 
+# crawling first page
 joblist <- collect_joblist(page)
 message(sprintf("Progress %s/%s", pagination, count))
 Sys.sleep(sleep_time)
-# succeed_crawl <- 1
 
+# crawling another pages
 for (pagination in 2:count) {
   tryCatch({
     url <- paste0(baseurl, "job-search/building-construction-jobs/", pagination)
@@ -65,7 +67,6 @@ for (pagination in 2:count) {
   error = function(e){
     message(paste0("Error data ", pagination, ": ", conditionMessage(e)))
   })
-  succeed_crawl <- pagination # sementara
 }
 
 end_time <- Sys.time()
@@ -105,3 +106,6 @@ if (nrow(joblist) > 0) {
   message(paste0("There is no new job post yet."))
   new_job_availability <- FALSE
 }
+
+source("02_job_jobstreet_structuring.R")
+source("03_job_jobstreet_db.R")
