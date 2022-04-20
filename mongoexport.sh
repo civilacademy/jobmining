@@ -3,7 +3,7 @@
 # Config
 echo "uri: mongodb://<username>:<password>@localhost:<port>/?authSource=admin" >> backup/secret_config.yml
 
-# create new temporary container
+# Create new temporary container
 docker container stop mongojob
 docker container create \
 		--name backup_container \
@@ -11,7 +11,7 @@ docker container create \
 		--mount "type=bind,source=<working-directory>/backup,destination=/backup" \
 		--env MONGO_INITDB_ROOT_USERNAME=<username> \
 		--env MONGO_INITDB_ROOT_PASSWORD=<password> \
-		mongo:5.0
+		mongo:latest
 
 # Start job
 docker container start backup_container

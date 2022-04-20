@@ -17,6 +17,7 @@ Working in local machine required:
 ## Directory
 
 ```
+├── .gitignore
 ├── 01_job_jobstreet_crawler.R
 ├── 02_job_jobstreet_structuring.R
 ├── 03_job_jobstreet_db.R
@@ -35,8 +36,8 @@ Working in local machine required:
 │   └── jobraw
 │       ├── jobraw.rds
 │       └── jobstreet_jobraw_yyyy-mm-dd.rds
-├── mongoexport.sh
 ├── jobmining.Rproj
+├── mongoexport.sh
 ├── output
 │   └── job_position.csv
 ├── README.md
@@ -84,17 +85,31 @@ MONGO_PORT=<port>
 
 ### Import data
 
-Import data from json file:
+Import data from json file.
+
+Create new container with storage access to json file:
 
 ```bash
-docker start mongojob
-docker exec -it mongojob bash
+docker container create \
+	--name test_import \
+	--publish <port>:27017 \
+	--mount "type=bind,source=<working-directory>/data/jobdata,destination=/backup" \
+	mongo:latest
+```
 
+Start container and access container's bash:
+
+```bash
+docker start test_import
+docker exec -it test_import bash
+```
+
+Import data from storage to MongoDB:
+
+```bash
 mongoimport --db test --collection jobvacancy \
 	--authenticationDatabase admin --username <username> --password <password> \
-	--drop --file <working-directory>/backup/jobdata.json && exit
-
-docker stop mongojob
+	--drop --file /backup/jobdata.json && exit
 ```
 
 ### Export data

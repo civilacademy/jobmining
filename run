@@ -1,5 +1,0 @@
-#!/bin/bash
-
-docker container start mongojob
-Rscript 01_job_jobstreet_crawler.R
-docker container stop mongojob
