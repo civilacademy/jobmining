@@ -107,9 +107,7 @@ docker exec -it test_import bash
 Import data from storage to MongoDB:
 
 ```bash
-mongoimport --db test --collection jobvacancy \
-	--authenticationDatabase admin --username <username> --password <password> \
-	--drop --file /backup/jobdata.json && exit
+mongoimport --db test --collection jobvacancy --drop --file /backup/jobdata.json && exit
 ```
 
 ### Export data
