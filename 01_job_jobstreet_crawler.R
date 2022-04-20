@@ -70,7 +70,7 @@ for (pagination in 2:count) {
 }
 
 end_time <- Sys.time()
-duration <- end_time - start_time - succeed_crawl*(sleep_time/60)
+duration <- end_time - start_time - pagination*(sleep_time/60)
 duration <- as.numeric(duration)
 message(paste0(
   "Scraping duration: ",

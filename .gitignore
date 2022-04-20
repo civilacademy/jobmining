@@ -3,5 +3,7 @@
 .RData
 .Ruserdata
 .Renviron
-data/archived/*
+secret*
+backup/secret*
+data/archived/
 
