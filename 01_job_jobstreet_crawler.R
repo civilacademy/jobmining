@@ -51,7 +51,7 @@ count <- ceiling(count/30)
 
 # crawling first page
 joblist <- collect_joblist(page)
-message(sprintf("Progress %s/%s", pagination, count))
+message(sprintf("Get links progress %s/%s", pagination, count))
 Sys.sleep(sleep_time)
 
 # crawling another pages
@@ -61,7 +61,7 @@ for (pagination in 2:count) {
     page <- read_html(url)
     jobs <- collect_joblist(page)
     joblist <- bind_rows(joblist, jobs)
-    message(sprintf("Progress %s/%s", pagination, count))
+    message(sprintf("Get links progress %s/%s", pagination, count))
     Sys.sleep(sleep_time)
   }, 
   error = function(e){
@@ -99,7 +99,7 @@ joblist <- anti_join(joblist, joblist_collection, by = "id") %>% distinct()
 if (nrow(joblist) > 0) {
   if(!dir.exists("data/joblist")) dir.create("data/joblist")
   joblist <- bind_cols(joblist, timestamp = end_time)
-  write.csv(joblist, file = paste0("data/joblist/jobstreet_joblist_", as.character(Sys.Date()), ".csv"), row.names = FALSE)
+  write_csv(joblist, file = paste0("data/joblist/jobstreet_joblist_", as.character(Sys.Date()), ".csv"))
   message(paste0(nrow(joblist), " new job link(s) stored"))
   new_job_availability <- TRUE
 } else {

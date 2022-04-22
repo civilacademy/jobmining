@@ -1,4 +1,5 @@
 # you have to run previous script 01 and 02 to obtain jobdata object
+# run mongo container at first
 
 if (new_job_availability) {
   library(mongolite)

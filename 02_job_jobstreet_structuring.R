@@ -9,14 +9,12 @@ if (new_job_availability) {
   # parameters
   sleep_time <- 2L
   message(paste0("Pause duration: ", sleep_time, " secs"))
-  iter <- ceiling(nrow(joblist)/10)
-  # iter <- floor(nrow(joblist)/10)
-  # last_iter_item <- nrow(joblist) %% 10
+  iter <- nrow(joblist)
   
   # function
-  collect_jobdesc <- function(joblist, n0, n1){
+  collect_jobdesc <- function(joblist, n){
     
-    for (num in n0:n1) {
+    for (num in 1:n) {
       tryCatch({
         page <- read_html(joblist$link[[num]])
         
@@ -56,13 +54,13 @@ if (new_job_availability) {
           link = joblist$link[[num]]
         )
         
-        if (num > n0) {
+        if (num > 1) {
           jobdesc <- bind_rows(jobdesc, job)
         } else {
           jobdesc <- job
         }
         
-        message(sprintf("Progress %s/%s", num-n0+1, n1-n0+1))
+        message(sprintf("Progress %s/%s", num, n))
         Sys.sleep(sleep_time)
       },
       error = function(e){
@@ -72,17 +70,8 @@ if (new_job_availability) {
     return(jobdesc)
   }
   
-  # looping
-  for (i in 1:iter) {
-    message(paste0("Iteration ", i, "/", iter))
-    jobdesc <- collect_jobdesc(joblist, i*10-9, i*10)
-    if (i > 1) {
-      jobraw <- bind_rows(jobraw, jobdesc)
-    } else {
-      jobraw <- jobdesc
-    }
-  }
-  
+  message("Get job details...")
+  jobraw <- collect_jobdesc(joblist, iter)
   jobraw <- distinct(jobraw)
   
   # save raw data to rds
